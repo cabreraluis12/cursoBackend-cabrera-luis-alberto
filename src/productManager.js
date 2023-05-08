@@ -92,11 +92,11 @@ module.exports = { productManager };
 // AGRAGAR PRODUCTO
 
 /*productManager.addProduct({
-    title: "producto prueba 2",
-    description: "Este es un producto prueba 2",
+    title: "producto prueba 10",
+    description: "Este es un producto prueba 10",
     price: 200,
     thumbnail: "Sin imagen",
-    code: "abc1234",
+    code: "abcd1234567890",
     stock: 25,
 });*/
 
