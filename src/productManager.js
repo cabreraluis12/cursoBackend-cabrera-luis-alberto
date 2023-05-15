@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 
 class ProductManager {
     constructor() {
@@ -22,7 +22,7 @@ class ProductManager {
         return product;
     }
 
-    updateProduct(id, { title, description, price, thumbnail, code, stock }) {
+    updateProduct(id, { title, description, code, price, stock, category, thumbnail  }) {
         const productIndex = this.products.findIndex(product => product.id === id);
         if (productIndex === -1) {
             throw new Error("Product not found");
@@ -36,6 +36,7 @@ class ProductManager {
             thumbnail: thumbnail || this.products[productIndex].thumbnail,
             code: code || this.products[productIndex].code,
             stock: stock || this.products[productIndex].stock,
+            category: category || this.products[productIndex].category
         };
     
         this.products[productIndex] = updatedProduct;
@@ -60,7 +61,7 @@ class ProductManager {
         return deletedProduct;
     }
     
-    addProduct({ title, description, price, thumbnail, code, stock }) {
+    addProduct({ title, description, code, price, status, stock, category, thumbnail = [] }) {
         const productExists = this.products.some(product => product.code === code);
         if (productExists) {
             throw new Error("Product code already exists");
@@ -70,9 +71,11 @@ class ProductManager {
             title,
             description,
             price,
+            status,
             thumbnail,
             code,
             stock,
+            category,
         };
         this.products.push(Product);
         const productsString = JSON.stringify(this.products);
@@ -83,38 +86,6 @@ class ProductManager {
     }
 }
 
-const productManager = new ProductManager();
-
-module.exports = { productManager };
-
-
-
-// AGRAGAR PRODUCTO
-
-/*productManager.addProduct({
-    title: "producto prueba 10",
-    description: "Este es un producto prueba 10",
-    price: 200,
-    thumbnail: "Sin imagen",
-    code: "abcd1234567890",
-    stock: 25,
-});*/
-
-
-
-//EDITAR PRODUCTO
-
-/*productManager.updateProduct(1,{
-    title: "producto prueba 1 modficado",
-    
-});*/
-
-//BORRAR PRODUCTO POR ID
-
-/*productManager.deleteProduct(2)*/
-
-
-
-console.log(productManager.getProducts());
+export const productManager = new ProductManager();
 
 
