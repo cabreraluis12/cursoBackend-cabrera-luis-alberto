@@ -1,0 +1,14 @@
+<div class="m-5 fs-4 bg-light-subtle">
+    <h1>Vista de Productos:</h1>
+    <hr/>
+    {{#each products}}
+        <p><span class="text-danger text-decoration-underline">-ID: </span> {{this.id}}</p>
+        <p><span class="text-danger text-decoration-underline">-Titulo: </span> {{this.title}}</p>
+        <p><span class="text-danger text-decoration-underline">-Descripcion: </span>  {{this.description}}</p>
+        <p><span class="text-danger text-decoration-underline">-Precio:</span> {{this.price}}</p>
+        <p><span class="text-danger text-decoration-underline">-Img:</span> {{this.thumbnail}}</p>
+        <p><span class="text-danger text-decoration-underline">-Codigo:</span> {{this.code}}</p>
+        <p><span class="text-danger text-decoration-underline">-Stock:</span> {{this.stock}}</p>
+        <hr/>
+    {{/each}}
+</div>

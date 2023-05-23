@@ -1,0 +1,111 @@
+<div class="m-5 fs-4 bg-light-subtle">
+  <h1>Vista de Productos en Tiempo Real:</h1>
+  <hr>
+  <div class="m-5">
+  <h1>Crear Producto</h1>
+  <hr>
+  <form action="/api/products" method="POST" class="mb-4">
+    <div class="mb-3">
+      <label for="title" class="form-label">Título</label>
+      <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+    <div class="mb-3">
+      <label for="description" class="form-label">Descripción</label>
+      <textarea class="form-control" id="description" name="description" required></textarea>
+    </div>
+    <div class="mb-3">
+      <label for="code" class="form-label">Código</label>
+      <input type="text" class="form-control" id="code" name="code" required>
+    </div>
+    <div class="mb-3">
+      <label for="price" class="form-label">Precio</label>
+      <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+    </div>
+    <div class="mb-3">
+      <label for="stock" class="form-label">Stock</label>
+      <input type="number" class="form-control" id="stock" name="stock" required>
+    </div>
+    <div class="mb-3">
+      <label for="category" class="form-label">Categoría</label>
+      <input type="text" class="form-control" id="category" name="category" required>
+    </div>
+    <div class="mb-3">
+      <label for="thumbnail" class="form-label">Thumbnail</label>
+      <input type="text" class="form-control" id="thumbnail" name="thumbnail">
+    </div>
+    <button type="submit" class="btn btn-primary">Crear</button>
+  </form>
+</div>
+<hr>
+<div class="container">
+  <h2>Eliminar Producto</h2>
+  <form id="deleteProductForm" class="form" action="/api/products/delete" method="DELETE">
+  <div class="form-group">
+    <label for="productId">ID del producto:</label>
+    <input type="text" id="productId" name="productId" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-danger">Eliminar producto</button>
+</form>
+</div>
+
+  <hr/>
+  <ul>
+    <hr>
+    {{#each products}}
+        <p><span class="text-danger text-decoration-underline">-ID: </span> {{this.id}}</p>
+        <p><span class="text-danger text-decoration-underline">-Titulo: </span> {{this.title}}</p>
+        <p><span class="text-danger text-decoration-underline">-Descripcion: </span>  {{this.description}}</p>
+        <p><span class="text-danger text-decoration-underline">-Precio:</span> {{this.price}}</p>
+        <p><span class="text-danger text-decoration-underline">-Img:</span> {{this.thumbnail}}</p>
+        <p><span class="text-danger text-decoration-underline">-Codigo:</span> {{this.code}}</p>
+        <p><span class="text-danger text-decoration-underline">-Stock:</span> {{this.stock}}</p>
+        <hr>
+        <hr>
+    {{/each}}
+  </ul>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+socket.on("products", (products) => {
+  const productList = document.querySelector("ul");
+  productList.innerHTML = "";
+  products.forEach((product) => {
+    const listItem = document.createElement("li");
+    listItem.innerHTML = `
+      <hr>
+      <p><span class="text-danger text-decoration-underline">-ID: </span> ${product.id}</p>
+      <p><span class="text-danger text-decoration-underline">-Titulo: </span> ${product.title}</p>
+      <p><span class="text-danger text-decoration-underline">-Descripcion: </span> ${product.description}</p>
+      <p><span class="text-danger text-decoration-underline">-Precio:</span> ${product.price}</p>
+      <p><span class="text-danger text-decoration-underline">-Img:</span> ${product.thumbnail}</p>
+      <p><span class="text-danger text-decoration-underline">-Codigo:</span> ${product.code}</p>
+      <p><span class="text-danger text-decoration-underline">-Stock:</span> ${product.stock}</p>
+      <hr>
+      <hr>
+    `;
+    productList.appendChild(listItem);
+  });
+});
+
+  document.getElementById('deleteProductForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const productId = document.getElementById('productId').value;
+
+  try {
+    const response = await fetch(`/api/products/${productId}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      alert('El producto se ha eliminado correctamente.');
+    } else {
+      const errorData = await response.json();
+      alert('Error: ' + errorData.error);
+    }
+  } catch (error) {
+    alert('Ocurrió un error al eliminar el producto.');
+  }
+});
+</script>
