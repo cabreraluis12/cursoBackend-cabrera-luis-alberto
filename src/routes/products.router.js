@@ -4,7 +4,9 @@ import { uploader } from "../utils.js";
 
 export const routerProducts = express.Router();
 
-    routerProducts.get("/", (req, res) => {
+
+
+routerProducts.get("/", (req, res) => {
     try {
         const q = req.query;
         const setLimit = Object.keys(q).length;
@@ -30,7 +32,9 @@ export const routerProducts = express.Router();
     }
     });
 
-    routerProducts.post("/", (req, res) => {
+
+
+routerProducts.post("/", (req, res) => {
     const { title, description, code, price, stock, category, thumbnails } = req.body;
 
     if (!title || !description || !code || !price || !stock || !category) {
@@ -38,7 +42,7 @@ export const routerProducts = express.Router();
         return;
     }
 
-    const status = true; // Default status
+    const status = true;
 
     try {
         const productExists = productManager.getProducts().some(product => product.code === code);
@@ -54,7 +58,9 @@ export const routerProducts = express.Router();
     }
     });
 
-    routerProducts.put("/:pid", (req, res) => {
+
+
+routerProducts.put("/:pid", (req, res) => {
     const { pid } = req.params;
     const { title, description, code, price, stock, category, thumbnail } = req.body;
 
@@ -66,31 +72,33 @@ export const routerProducts = express.Router();
     }
     });
 
-    routerProducts.delete("/:pid", (req, res) => {
-        const { pid } = req.params;
+
+
+routerProducts.delete("/:pid", (req, res) => {
+    const { pid } = req.params;
     
-        try {
-            const deletedProduct = productManager.deleteProduct(parseInt(pid));
-            res.status(200).json({  
-                status: "success",
-                msg: "El producto se ha eliminado correctamente",
-                data: { product: deletedProduct },
-            });
+    try {
+        const deletedProduct = productManager.deleteProduct(parseInt(pid));
+        res.status(200).json({  
+        status: "success",
+        msg: "El producto se ha eliminado correctamente",
+        data: { product: deletedProduct },
+        });
         } catch (error) {
-            res.status(404).json({ error: error.message });
+        res.status(404).json({ error: error.message });
         }
-    });
+});
+
+
+routerProducts.delete("/delete", (req, res) => {
+    const { productId } = req.body;
     
-    // Controlador de eventos para el formulario de eliminación de producto
-    routerProducts.delete("/delete", (req, res) => {
-        const { productId } = req.body;
-    
-        try {
-            const deletedProduct = productManager.deleteProduct(parseInt(productId));
-            res.status(200).json({  
-                status: "success",
-                msg: "El producto se ha eliminado correctamente",
-                data: { product: deletedProduct },
+    try {
+        const deletedProduct = productManager.deleteProduct(parseInt(productId));
+        res.status(200).json({  
+            status: "success",
+            msg: "El producto se ha eliminado correctamente",
+            data: { product: deletedProduct },
             });
         } catch (error) {
             res.status(400).json({ error: error.message });
