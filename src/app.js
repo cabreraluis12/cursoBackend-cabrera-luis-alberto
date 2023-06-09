@@ -7,9 +7,13 @@ import { routerRealTimeProducts } from "./routes/realTime.products.router.js";
 import { routerViewProducts } from "./routes/view.products.router.js";
 import { __dirname } from "./utils.js";
 import { initRealTimeProducts } from "./routes/realTime.products.router.js";
+import { connectMongo } from "./utils.js";
+
 
 const app = express();
 const port = 8080;
+
+connectMongo();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

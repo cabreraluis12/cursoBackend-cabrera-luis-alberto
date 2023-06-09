@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import multer from "multer";
 import { createServer } from "http";
 import { Server } from "socket.io";
-
+import { connect } from "mongoose";
 
 
 export const __filename = fileURLToPath (import.meta.url);
@@ -16,5 +16,19 @@ const storage = multer.diskStorage({
         cb(null, file.originalname);
     },
 });
+
+export async function connectMongo(){
+    try {
+        await connect(
+            "mongodb+srv://luiscabrera1201:5MWWtCtdtCIek3X4@coder.2kfv2rw.mongodb.net/ecommerce?retryWrites=true&w=majority"
+        );
+        console.log("plug to Mongo")
+    } catch (e) {
+        console.log(e);
+        throw "can't connect to Mongo"
+}
+}
+
+
 
 export const uploader = multer ({storage});

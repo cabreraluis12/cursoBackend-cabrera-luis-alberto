@@ -1,4 +1,7 @@
 import fs from 'fs';
+import { ProductModel } from "./Dao/models/products.models.js";
+import mongoose from 'mongoose';
+
 
 class ProductManager {
     constructor() {
@@ -11,81 +14,92 @@ class ProductManager {
 
 
     getProducts() {
-        return this.products;
+      return ProductModel.find({});
     }
 
-    getProductById(id) {
-        const product = this.products.find(product => product.id === id);
-            if (!product) {
-        throw new Error("Product not found");
+    async getProducts(limit) {
+      try {
+        let query = ProductModel.find();
+    
+        if (limit) {
+          query = query.limit(limit);
         }
-        return product;
+    
+        const products = await query.exec();
+        return products;
+      } catch (error) {
+        throw new Error(error.message);
+      }
     }
 
-    updateProduct(id, { title, description, code, price, stock, category, thumbnail  }) {
-        const productIndex = this.products.findIndex(product => product.id === id);
-        if (productIndex === -1) {
-            throw new Error("Product not found");
+    async getProductById(id) {
+      return ProductModel.findOne({ id }).exec();
+    }
+
+    async productExists(code) {
+      const product = await ProductModel.findOne({ code }).exec();
+      return !!product;
+    }
+  
+
+    async updateProduct(id, { title, description, code, price, stock, category, thumbnail }) {
+      try {
+        const updatedProduct = await ProductModel.findOneAndUpdate(
+          { id: id },
+          {
+            $set: {
+              title: title || undefined,
+              description: description || undefined,
+              code: code || undefined,
+              price: price || undefined,
+              stock: stock || undefined,
+              category: category || undefined,
+              thumbnail: thumbnail || undefined
+            }
+          },
+          { new: true }
+        );
+    
+        if (!updatedProduct) {
+          throw new Error("Product not found");
         }
-    
-        const updatedProduct = {
-            id,
-            title: title || this.products[productIndex].title,
-            description: description || this.products[productIndex].description,
-            price: price || this.products[productIndex].price,
-            thumbnail: thumbnail || this.products[productIndex].thumbnail,
-            code: code || this.products[productIndex].code,
-            stock: stock || this.products[productIndex].stock,
-            category: category || this.products[productIndex].category
-        };
-    
-        this.products[productIndex] = updatedProduct;
-    
-        const productsString = JSON.stringify(this.products);
-        fs.writeFileSync("products.json", productsString);
     
         return updatedProduct;
+      } catch (error) {
+        throw new Error(error.message);
+      }
     }
 
-    deleteProduct(id) {
-        const productIndex = this.products.findIndex(product => product.id === id);
-        if (productIndex === -1) {
-            throw new Error("Product not found");
+    async deleteProduct(id) {
+      try {
+        const deletedProduct = await ProductModel.findOneAndDelete({ id: id });
+    
+        if (!deletedProduct) {
+          throw new Error("Product not found");
         }
-    
-        const deletedProduct = this.products.splice(productIndex, 1)[0];
-    
-        const productsString = JSON.stringify(this.products);
-        fs.writeFileSync("products.json", productsString);
     
         return deletedProduct;
+      } catch (error) {
+        throw new Error(error.message);
+      }
     }
     
+    
     addProduct({ title, description, code, price, status, stock, category, thumbnail = [] }) {
-        const productExists = this.products.some(product => product.code === code);
-        if (productExists) {
-            throw new Error("Product code already exists");
-        }
-        const Product = {
-            id: ++this.lastId,
-            title,
-            description,
-            price,
-            status,
-            thumbnail,
-            code,
-            stock,
-            category,
-        };
-        this.products.push(Product);
-        const productsString = JSON.stringify(this.products);
-        fs.writeFileSync("products.json", productsString);
-        return Product;
+  const product = new ProductModel({
+    id: ++this.lastId,
+    title,
+    description,
+    price,
+    status,
+    thumbnail,
+    code,
+    stock,
+    category
+  });
 
-        
-    }
+  return product.save();
+}
 }
 
 export const productManager = new ProductManager();
-
-

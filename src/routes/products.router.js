@@ -6,88 +6,94 @@ export const routerProducts = express.Router();
 
 
 
-routerProducts.get("/", (req, res) => {
-    try {
-        const q = req.query;
-        const setLimit = Object.keys(q).length;
+routerProducts.get("/", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit);
 
-        if (setLimit === 0) {
-        res.status(200).send({ status: "success", data: productManager.getProducts() });
-        } else {
-        const newArray = productManager.getProducts().slice(0, q.limit);
-        res.status(200).send({ status: "success", data: newArray });
-        }
-    } catch (error) {
-        res.status(401).send(error);
+    const products = await productManager.getProducts(limit);
+    res.status(200).send({ status: "success", data: products });
+  } catch (error) {
+    res.status(401).send(error);
+  }
+});
+
+routerProducts.get("/:pid", async (req, res) => {
+  const { pid } = req.params;
+  try {
+    const product = await productManager.getProductById(pid);
+    res.send({ product });
+  } catch (error) {
+    res.status(404).send({ error: error.message });
+  }
+});
+
+
+
+
+routerProducts.post("/", async (req, res) => {
+  const { title, description, code, price, stock, category, thumbnails } = req.body;
+
+  if (!title || !description || !code || !price || !stock || !category) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  const status = true;
+
+  try {
+    const productExists = await productManager.productExists(code);
+    if (productExists) {
+      res.status(400).json({ error: "Product code already exists" });
+      return;
     }
+
+    const newProduct = await productManager.addProduct({
+      title,
+      description,
+      code,
+      price,
+      status,
+      stock,
+      category,
+      thumbnail: thumbnails,
     });
 
-    routerProducts.get("/:pid", (req, res) => {
-    const { pid } = req.params;
-    try {
-        const product = productManager.getProductById(parseInt(pid));
-        res.send({ product });
-    } catch (error) {
-        res.status(404).send({ error: error.message });
-    }
-    });
-
-
-
-routerProducts.post("/", (req, res) => {
-    const { title, description, code, price, stock, category, thumbnails } = req.body;
-
-    if (!title || !description || !code || !price || !stock || !category) {
-        res.status(400).json({ error: "Missing required fields" });
-        return;
-    }
-
-    const status = true;
-
-    try {
-        const productExists = productManager.getProducts().some(product => product.code === code);
-        if (productExists) {
-        res.status(400).json({ error: "Product code already exists" });
-        return;
-        }
-
-        const newProduct = productManager.addProduct({ title, description, code, price, status, stock, category, thumbnail: thumbnails });
-        res.status(201).json({ product: newProduct });
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-    });
-
+    res.status(201).json({ product: newProduct });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 
 routerProducts.put("/:pid", (req, res) => {
-    const { pid } = req.params;
-    const { title, description, code, price, stock, category, thumbnail } = req.body;
+  const { pid } = req.params;
+  const { title, description, code, price, stock, category, thumbnail } = req.body;
 
-    try {
-        const updatedProduct = productManager.updateProduct(parseInt(pid), { title, description, code, price, stock, category, thumbnail });
-        res.status(200).json({ status: "success", msg: "Producto modificado exitosamente", data: { product: updatedProduct } });
-    } catch (error) {
-        res.status(404).json({ error: error.message });
-    }
-    });
+  try {
+      const updatedProduct = productManager.updateProduct(parseInt(pid), { title, description, code, price, stock, category, thumbnail });
+      res.status(200).json({ status: "success", msg: "Producto modificado exitosamente", data: { product: updatedProduct } });
+  } catch (error) {
+      res.status(404).json({ error: error.message });
+  }
+  });
 
 
 
 routerProducts.delete("/:pid", (req, res) => {
-    const { pid } = req.params;
-    
-    try {
-        const deletedProduct = productManager.deleteProduct(parseInt(pid));
-        res.status(200).json({  
-        status: "success",
-        msg: "El producto se ha eliminado correctamente",
-        data: { product: deletedProduct },
-        });
-        } catch (error) {
-        res.status(404).json({ error: error.message });
-        }
+  const { pid } = req.params;
+  
+  try {
+      const deletedProduct = productManager.deleteProduct(parseInt(pid));
+      res.status(200).json({  
+      status: "success",
+      msg: "El producto se ha eliminado correctamente",
+      data: { product: deletedProduct },
+      });
+      } catch (error) {
+      res.status(404).json({ error: error.message });
+      }
 });
+
 
 
 routerProducts.delete("/delete", (req, res) => {
