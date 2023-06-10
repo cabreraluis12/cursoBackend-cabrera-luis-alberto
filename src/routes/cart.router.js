@@ -1,154 +1,130 @@
 import express from "express";
-import fs from "fs";
+import { CartModel } from "../Dao/models/cart.models.js";
+import { ProductModel } from "../Dao/models/products.models.js";
+import mongoose from "mongoose";
+
+
 
 let lastCartId = 0;
 
 export const routerCarts = express.Router();
 
-const cartFilePath = "./carrito.json";
-
-function createCartFileIfNotExists() {
-    if (!fs.existsSync(cartFilePath)) {
-    fs.writeFileSync(cartFilePath, JSON.stringify([]));
-    }
-}
-
-function loadLastCartId() {
-    if (fs.existsSync(cartFilePath)) {
-    const cartsString = fs.readFileSync(cartFilePath, "utf8");
-    const carts = JSON.parse(cartsString);
-    if (carts.length > 0) {
-        lastCartId = Math.max(...carts.map((cart) => cart.id));
-    }
-    }
-}
-
-createCartFileIfNotExists();
-loadLastCartId();
-
-routerCarts.post("/", (req, res) => {
+routerCarts.post("/", async (req, res) => {
     try {
-    const cartId = generateCartId();
-    const newCart = {
-        id: cartId,
-        products: [],
-    };
+        const cartId = generateCartId();
+        const newCart = new CartModel({
+            id: cartId,
+            products: [],
+        });
 
-    saveCart(newCart);
+        await newCart.save();
 
-    res.status(201).json({ 
-        status: "success",
-        msg: "Se a creado un nuevo cart con el id " + cartId,
-        data: {cart: newCart} 
+        res.status(201).json({ 
+            status: "success",
+            msg: "Se ha creado un nuevo carrito con el id " + cartId,
+            data: {cart: newCart} 
         });
     } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-routerCarts.get("/:cid", (req, res) => {
+routerCarts.get("/:cid", async (req, res) => {
     const { cid } = req.params;
     try {
-    const cart = getCartById(cid);
-    if (cart) {
-        const products = getProducts().filter((product) =>
-        cart.products.includes(product.id)
-        );
-        res.status(200).json({ 
-            status: "success",
-            msg: "Se econtro el carrito con el id " + cid,
-            data:{cart, products} });
-    } else {
-        res.status(404).json({ 
-            status: "Error",
-            msg: "El carrito con el id "+ cid +" no existe" });
-    }
-    } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-
-routerCarts.post("/:cid/product/:pid", (req, res) => {
-    const { cid, pid } = req.params;
-    try {
-        const cart = getCartById(cid);
-        const product = getProductById(pid);
-        
-        if (!product) {
+        const cart = await getCartById(cid);
+        if (cart) {
+            const productIds = cart.products.map((item) => item.product);
+            const products = await getProductsByIds(productIds);
+            res.status(200).json({ 
+                status: "success",
+                msg: "Se encontró el carrito con el id " + cid,
+                data: {cart, products}
+            });
+        } else {
             res.status(404).json({ 
                 status: "Error",
-                msg: "El producto con el id "+ pid +" no existe" });
-            return;
-        }
-    
-        const existingProductIndex = cart.products.findIndex(
-            (item) => item.product === pid
-        );
-    
-        if (existingProductIndex !== -1) {
-            cart.products[existingProductIndex].quantity++;
-        } else {
-            const newCartItem = {
-                product: pid,
-                title: product.title,
-                quantity: 1
-            };
-            cart.products.push(newCartItem);
-        }
-    
-        saveCart(cart);
-        res.status(200).json({ 
-            status: "Success",
-            msg: "Se agregaron productos al carrito " + cid,
-            data:{productId: pid, productTitle: product.title},
-            cart
+                msg: "El carrito con el id "+ cid +" no existe"
             });
+        }
     } catch (error) {
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+routerCarts.post("/:cid/product/:pid", async (req, res) => {
+    const { cid, pid } = req.params;
+    try {
+    const cart = await getCartById(cid);
+    const product = await getProductById(pid);
+
+    if (!product) {
         res.status(404).json({ 
             status: "Error",
-            msg: "El carrito con el id "+ cid +" no existe"});
+            msg: "El producto con el id " + pid + " no existe"
+        });
+        return;
+    }
+
+    const existingProduct = cart.products.find(
+        (item) => item.product === pid
+    );
+
+    if (existingProduct) {
+        existingProduct.quantity++;
+    } else {
+        const newCartItem = {
+            product: pid,
+            title: product.title,
+            quantity: 1
+        };
+        
+        cart.products.push(newCartItem);
+    }
+
+    await saveCart(cart);
+
+    res.status(200).json({ 
+        status: "Success",
+        msg: "Se agregó el producto al carrito " + cid,
+        data: {
+            productId: pid,
+            productTitle: product.title,
+            cart
+        }
+    });
+    } catch (error) {
+        console.log("Error al procesar la solicitud:", error);
+        res.status(404).json({ 
+        status: "Error",
+        msg: "El carrito con el id " + cid + " no existe"
+    });
     }
 });
 
 
 
-
-
-    //FUNCTIONS//
 
 function generateCartId() {
     lastCartId++;
     return lastCartId;
 }
 
-function getCartById(cartId) {
-    const cartsString = fs.readFileSync(cartFilePath, "utf8");
-    const carts = JSON.parse(cartsString);
-    const cart = carts.find((cart) => cart.id === Number(cartId));
+async function getCartById(cartId) {
+    const cart = await CartModel.findOne({ id: cartId }).exec();
     return cart;
 }
 
-function saveCart(cart) {
-    const cartsString = fs.readFileSync(cartFilePath, "utf8");
-    const carts = JSON.parse(cartsString);
-    const existingCartIndex = carts.findIndex((c) => c.id === cart.id);
-    if (existingCartIndex !== -1) {
-    carts[existingCartIndex] = cart;
-    } else {
-    carts.push(cart);
-    }
-
-    fs.writeFileSync(cartFilePath, JSON.stringify(carts));
+async function saveCart(cart) {
+    await cart.save();
 }
 
-function getProducts() {
-    const productsString = fs.readFileSync("./products.json", "utf8");
-    const products = JSON.parse(productsString);
+async function getProductsByIds(productIds) {
+    const products = await ProductModel.find({ id: { $in: productIds } }).exec();
     return products;
 }
 
-function getProductById(productId) {
-    const products = getProducts();
-    const product = products.find((p) => p.id === Number(productId));
+async function getProductById(productId) {
+    const product = await ProductModel.findOne({ id: productId }).exec();
     return product;
 }
