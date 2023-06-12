@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat</title>
+  <style>
+    .message {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chat</h1>
+  <div id="message-container">
+    {{#each messages}}
+      <div class="message">
+        <strong>{{this.user}}</strong>: {{this.message}}
+      </div>
+    {{/each}}
+  </div>
+
+  <form id="message-form">
+    <input type="text" id="user-input" placeholder="User" required>
+    <input type="text" id="message-input" placeholder="Message" required>
+    <button type="submit">Send</button>
+  </form>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    document.getElementById("message-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("user-input").value;
+      const message = document.getElementById("message-input").value;
+      if (user && message) {
+        socket.emit("newMessage", { user, message });
+        document.getElementById("user-input").value = "";
+        document.getElementById("message-input").value = "";
+      }
+    });
+
+    socket.on("messages", (messages) => {
+      const messageContainer = document.getElementById("message-container");
+      messageContainer.innerHTML = "";
+      messages.forEach((message) => {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+        messageDiv.innerHTML = `<strong>${message.user}</strong>: ${message.message}`;
+        messageContainer.appendChild(messageDiv);
+      });
+    });
+  </script>
+</body>
+</html>
