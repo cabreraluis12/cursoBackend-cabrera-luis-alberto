@@ -9,6 +9,13 @@
         <p><span class="text-danger text-decoration-underline">-Img:</span> {{this.thumbnail}}</p>
         <p><span class="text-danger text-decoration-underline">-Codigo:</span> {{this.code}}</p>
         <p><span class="text-danger text-decoration-underline">-Stock:</span> {{this.stock}}</p>
+        <a href="/products/{{this.id}}">Ver detalles</a>
+        <button onclick="addToCart('{{@this.id}}')">Agregar al carrito</button>
         <hr/>
     {{/each}}
 </div>
+
+<script>
+    function addToCart(productId) {
+    }
+</script>

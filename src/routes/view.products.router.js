@@ -2,9 +2,14 @@ import express from "express";
 import { productManager } from "../productManager.js";
 
 export const routerViewProducts = express.Router();
-const products = productManager.getProducts();
 
-routerViewProducts.get("/",(req, res) => {
-    return res.render("home",  {products});
+routerViewProducts.get("/", async (req, res) => {
+  try {
+    const products = await productManager.getProducts();
+
+    return res.render("home", { products});
+  } catch (error) {
+    return res.status(500).send(error);
+  }
 });
 

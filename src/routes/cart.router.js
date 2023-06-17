@@ -1,130 +1,240 @@
 import express from "express";
 import { CartModel } from "../Dao/models/cart.models.js";
 import { ProductModel } from "../Dao/models/products.models.js";
-import mongoose from "mongoose";
-
-
-
-let lastCartId = 0;
+import { CartManager } from "../Dao/cartManager.js";
 
 export const routerCarts = express.Router();
 
 routerCarts.post("/", async (req, res) => {
-    try {
-        const cartId = generateCartId();
-        const newCart = new CartModel({
-            id: cartId,
-            products: [],
-        });
-
-        await newCart.save();
-
-        res.status(201).json({ 
-            status: "success",
-            msg: "Se ha creado un nuevo carrito con el id " + cartId,
-            data: {cart: newCart} 
-        });
-    } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
-    }
+  try {
+    const response = await CartManager.createCart();
+    res.status(201).json(response);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 routerCarts.get("/:cid", async (req, res) => {
-    const { cid } = req.params;
-    try {
-        const cart = await getCartById(cid);
-        if (cart) {
-            const productIds = cart.products.map((item) => item.product);
-            const products = await getProductsByIds(productIds);
-            res.status(200).json({ 
-                status: "success",
-                msg: "Se encontró el carrito con el id " + cid,
-                data: {cart, products}
-            });
-        } else {
-            res.status(404).json({ 
-                status: "Error",
-                msg: "El carrito con el id "+ cid +" no existe"
-            });
-        }
-    } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
+  const { cid } = req.params;
+  try {
+    const cart = await CartManager.getCartById(cid);
+    if (cart) {
+      const productIds = cart.products.map((item) => item.product);
+      const products = await CartManager.getProductsByIds(productIds);
+      res.status(200).json({
+        status: "success",
+        msg: `Se encontró el carrito con el id ${cid}`,
+        data: { cart, products },
+      });
+    } else {
+      res.status(404).json({
+        status: "Error",
+        msg: `El carrito con el id ${cid} no existe`,
+      });
     }
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 routerCarts.post("/:cid/product/:pid", async (req, res) => {
-    const { cid, pid } = req.params;
-    try {
-    const cart = await getCartById(cid);
-    const product = await getProductById(pid);
+  const { cid, pid } = req.params;
+  try {
+    const cart = await CartManager.getCartById(cid);
+    const product = await CartManager.getProductById(pid);
 
     if (!product) {
-        res.status(404).json({ 
-            status: "Error",
-            msg: "El producto con el id " + pid + " no existe"
-        });
-        return;
+      res.status(404).json({
+        status: "Error",
+        msg: `El producto con el id ${pid} no existe`,
+      });
+      return;
     }
 
-    const existingProduct = cart.products.find(
-        (item) => item.product === pid
-    );
+    const existingProduct = cart.products.find((item) => item.product === pid);
 
     if (existingProduct) {
-        existingProduct.quantity++;
+      existingProduct.quantity++;
     } else {
-        const newCartItem = {
-            product: pid,
-            title: product.title,
-            quantity: 1
-        };
-        
-        cart.products.push(newCartItem);
+      const newCartItem = {
+        product: pid,
+        title: product.title,
+        quantity: 1,
+      };
+
+      cart.products.push(newCartItem);
     }
 
-    await saveCart(cart);
+    await CartManager.saveCart(cart);
 
-    res.status(200).json({ 
-        status: "Success",
-        msg: "Se agregó el producto al carrito " + cid,
-        data: {
-            productId: pid,
-            productTitle: product.title,
-            cart
-        }
+    res.status(200).json({
+      status: "Success",
+      msg: `Se agregó el producto al carrito ${cid}`,
+      data: {
+        productId: pid,
+        productTitle: product.title,
+        cart,
+      },
     });
-    } catch (error) {
-        console.log("Error al procesar la solicitud:", error);
-        res.status(404).json({ 
-        status: "Error",
-        msg: "El carrito con el id " + cid + " no existe"
+  } catch (error) {
+    console.log("Error al procesar la solicitud:", error);
+    res.status(404).json({
+      status: "Error",
+      msg: `El carrito con el id ${cid} no existe`,
     });
-    }
+  }
 });
 
+routerCarts.delete("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+  try {
+    const cart = await CartManager.getCartById(cid);
 
+    if (!cart) {
+      res.status(404).json({
+        status: "Error",
+        msg: `El carrito con el id ${cid} no existe`,
+      });
+      return;
+    }
 
+    const productIndex = cart.products.findIndex(
+      (item) => item.product === pid
+    );
 
-function generateCartId() {
-    lastCartId++;
-    return lastCartId;
-}
+    if (productIndex === -1) {
+      res.status(404).json({
+        status: "Error",
+        msg: `El producto con el id ${pid} no existe en el carrito ${cid}`,
+      });
+      return;
+    }
 
-async function getCartById(cartId) {
-    const cart = await CartModel.findOne({ id: cartId }).exec();
-    return cart;
-}
+    cart.products.splice(productIndex, 1);
 
-async function saveCart(cart) {
-    await cart.save();
-}
+    await CartManager.saveCart(cart);
 
-async function getProductsByIds(productIds) {
-    const products = await ProductModel.find({ id: { $in: productIds } }).exec();
-    return products;
-}
+    res.status(200).json({
+      status: "Success",
+      msg: `Se eliminó el producto del carrito ${cid}`,
+      data: {
+        productId: pid,
+        cart,
+      },
+    });
+  } catch (error) {
+    console.log("Error al procesar la solicitud:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
 
-async function getProductById(productId) {
-    const product = await ProductModel.findOne({ id: productId }).exec();
-    return product;
-}
+routerCarts.put("/:cid", async (req, res) => {
+  const { cid } = req.params;
+  const { products } = req.body;
+  try {
+    const cart = await CartManager.getCartById(cid);
+
+    if (!cart) {
+      res.status(404).json({
+        status: "Error",
+        msg: `El carrito con el id ${cid} no existe`,
+      });
+      return;
+    }
+
+    cart.products = products;
+
+    await CartManager.saveCart(cart);
+
+    res.status(200).json({
+      status: "Success",
+      msg: `Se actualizó el carrito ${cid}`,
+      data: {
+        cart,
+      },
+    });
+  } catch (error) {
+    console.log("Error al procesar la solicitud:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+routerCarts.put("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+  const { quantity } = req.body;
+  try {
+    const cart = await CartManager.getCartById(cid);
+
+    if (!cart) {
+      res.status(404).json({
+        status: "Error",
+        msg: `El carrito con el id ${cid} no existe`,
+      });
+      return;
+    }
+
+    const product = cart.products.find((item) => item.product === pid);
+
+    if (!product) {
+      res.status(404).json({
+        status: "Error",
+        msg: `El producto con el id ${pid} no existe en el carrito ${cid}`,
+      });
+      return;
+    }
+
+    product.quantity = quantity;
+
+    await CartManager.saveCart(cart);
+
+    res.status(200).json({
+      status: "Success",
+      msg: `Se actualizó la cantidad del producto en el carrito ${cid}`,
+      data: {
+        productId: pid,
+        cart,
+      },
+    });
+  } catch (error) {
+    console.log("Error al procesar la solicitud:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+routerCarts.delete("/:cid", async (req, res) => {
+  const { cid } = req.params;
+  try {
+    const cart = await CartManager.getCartById(cid);
+
+    if (!cart) {
+      res.status(404).json({
+        status: "Error",
+        msg: `El carrito con el id ${cid} no existe`,
+      });
+      return;
+    }
+
+    cart.products = [];
+
+    await CartManager.saveCart(cart);
+
+    res.status(200).json({
+      status: "Success",
+      msg: `Se eliminaron todos los productos del carrito ${cid}`,
+      data: {
+        cart,
+      },
+    });
+  } catch (error) {
+    console.log("Error al procesar la solicitud:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});

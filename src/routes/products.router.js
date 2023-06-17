@@ -1,17 +1,47 @@
 import express from "express";
 import { productManager } from "../productManager.js";
 import { uploader } from "../utils.js";
+import { ProductModel } from "../Dao/models/products.models.js";
 
 export const routerProducts = express.Router();
 
 
-
 routerProducts.get("/", async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit);
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const query = req.query.query || "";
+    const sort = req.query.sort || "";
 
-    const products = await productManager.getProducts(limit);
-    res.status(200).send({ status: "success", data: products });
+    const options = {
+      page,
+      limit,
+      sort: sort === "desc" ? { price: -1 } : { price: 1 },
+    };
+
+
+    const filter = {
+      $or: [
+        { category: { $regex: new RegExp(query, "i") } },
+        { availability: { $regex: new RegExp(query, "i") } },
+      ],
+    };
+
+
+    const products = await ProductModel.paginate(filter, options);
+
+    res.status(200).json({
+      status: "success",
+      payload: products.docs,
+      totalPages: products.totalPages,
+      prevPage: products.prevPage,
+      nextPage: products.nextPage,
+      page: products.page,
+      hasPrevPage: products.hasPrevPage,
+      hasNextPage: products.hasNextPage,
+      prevLink: products.hasPrevPage ? `/products?page=${products.prevPage}` : null,
+      nextLink: products.hasNextPage ? `/products?page=${products.nextPage}` : null,
+    });
   } catch (error) {
     res.status(401).send(error);
   }

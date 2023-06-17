@@ -9,6 +9,7 @@ import { __dirname } from "./utils.js";
 import { initRealTimeProducts } from "./routes/realTime.products.router.js";
 import { connectMongo } from "./utils.js";
 import { MessageModel } from "./Dao/models/message.model.js";
+import { routerViewCart } from "./routes/view.cart.router.js";
 
 
 const app = express();
@@ -19,14 +20,25 @@ connectMongo();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.engine("handlebars", handlebars.engine());
+app.engine(
+  "handlebars",
+  handlebars.engine({
+    extname: ".handlebars",
+    defaultLayout: "main",
+    runtimeOptions: {
+      allowProtoPropertiesByDefault: true,
+      allowProtoMethodsByDefault: true,
+    },
+  })
+);
 app.set("views", __dirname + "/views");
 app.set("view engine", "handlebars");
 
-app.use("/api/products", routerProducts);
+app.use("/products", routerProducts);
 app.use("/view/products", routerViewProducts);
 app.use("/realtimeproducts", routerRealTimeProducts);
 app.use("/api/carts", routerCarts);
+app.use("/carts", routerViewCart)
 
 app.get("/chat", async (req, res) => {
   try {
@@ -36,6 +48,7 @@ app.get("/chat", async (req, res) => {
     res.status(500).send("Error retrieving messages");
   }
 });
+
 
 
 const httpServer = app.listen(port, () => {
