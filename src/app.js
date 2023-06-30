@@ -9,16 +9,27 @@ import { __dirname } from "./utils.js";
 import { initRealTimeProducts } from "./routes/realTime.products.router.js";
 import { connectMongo } from "./utils.js";
 import { MessageModel } from "./Dao/models/message.model.js";
-import { routerViewCart } from "./routes/view.cart.router.js";
-
+import { routerViewCart } from "./routes/view.cart.router.js"
+import cookieParser from "cookie-parser";
+import MongoStore from "connect-mongo";
+import session from "express-session";
+import { loginRouter } from "./routes/login.router.js";
+import { viewsRouter } from "./routes/view.router.js";
 
 const app = express();
 const port = 8080;
 
 connectMongo();
 
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(session({
+    store: MongoStore.create({mongoUrl:"mongodb+srv://luiscabrera1201:5MWWtCtdtCIek3X4@coder.2kfv2rw.mongodb.net/ecommerce?retryWrites=true&w=majority", ttl: 1000}),
+    secret:"es-un-secreto",
+    resave: true,
+    saveUninitialized: true,
+}))
 
 app.engine(
   "handlebars",
@@ -39,6 +50,8 @@ app.use("/view/products", routerViewProducts);
 app.use("/realtimeproducts", routerRealTimeProducts);
 app.use("/api/carts", routerCarts);
 app.use("/carts", routerViewCart)
+app.use("/api/session", loginRouter)
+app.use('/', viewsRouter);
 
 app.get("/chat", async (req, res) => {
   try {

@@ -1,19 +1,46 @@
-<div class="m-5 fs-4 bg-light-subtle">
-    <h1>Vista de Productos:</h1>
-    <hr/>
-    {{#each products}}
-        <p><span class="text-danger text-decoration-underline">-ID: </span> {{this.id}}</p>
-        <p><span class="text-danger text-decoration-underline">-Titulo: </span> {{this.title}}</p>
-        <p><span class="text-danger text-decoration-underline">-Descripcion: </span>  {{this.description}}</p>
-        <p><span class="text-danger text-decoration-underline">-Precio:</span> {{this.price}}</p>
-        <p><span class="text-danger text-decoration-underline">-Img:</span> {{this.thumbnail}}</p>
-        <p><span class="text-danger text-decoration-underline">-Codigo:</span> {{this.code}}</p>
-        <p><span class="text-danger text-decoration-underline">-Stock:</span> {{this.stock}}</p>
-        <a href="/products/{{this.id}}">Ver detalles</a>
-        <button onclick="addToCart('{{@this.id}}')">Agregar al carrito</button>
-        <hr/>
-    {{/each}}
-</div>
+
+<div class="container">
+        <div class="m-5 fs-4 bg-light-subtle">
+{{#if user}}
+    <div class="alert alert-success welcome-message" role="alert">
+        Bienvenido, <span>{{user.firstName}}</span>
+    </div>
+    <div class="user-info">
+        <strong>Correo electrónico:</strong> {{user.email}}
+    </div>
+    <div class="user-role">
+        <strong>Rol:</strong> {{#if user.admin}}Administrador{{else}}Usuario{{/if}}
+    </div>
+    <button class="btn btn-danger mt-3" onclick="window.location.href='/logout'">Cerrar sesión</button>
+    {{#if user.admin}}
+        <button class="btn btn-primary mt-3" onclick="window.location.href='/admin'">Panel de administración</button>
+    {{/if}}
+{{else}}
+    <p>No has iniciado sesión</p>
+    <div class="d-flex mt-3">
+        <button class="btn btn-primary me-2" onclick="window.location.href='/login'">Iniciar sesión</button>
+        <button class="btn btn-primary" onclick="window.location.href='/register'">Registrarse</button>
+    </div>
+{{/if}}
+            <h1>Vista de Productos:</h1>
+            
+            <hr/>
+            {{#each products}}
+                <div class="product">
+                    <p><span class="text-danger text-decoration-underline">-ID: </span> {{this.id}}</p>
+                    <p><span class="text-danger text-decoration-underline">-Titulo: </span> {{this.title}}</p>
+                    <p><span class="text-danger text-decoration-underline">-Descripcion: </span>  {{this.description}}</p>
+                    <p><span class="text-danger text-decoration-underline">-Precio:</span> {{this.price}}</p>
+                    <p><span class="text-danger text-decoration-underline">-Img:</span> {{this.thumbnail}}</p>
+                    <p><span class="text-danger text-decoration-underline">-Codigo:</span> {{this.code}}</p>
+                    <p><span class="text-danger text-decoration-underline">-Stock:</span> {{this.stock}}</p>
+                    <a href="/products/{{this.id}}" class="btn btn-primary">Ver detalles</a>
+                    <button class="btn btn-success" onclick="addToCart('{{@this.id}}')">Agregar al carrito</button>
+                    <hr/>
+                </div>
+            {{/each}}
+        </div>
+    </div>
 
 <script>
     function addToCart(productId) {
