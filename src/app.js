@@ -15,11 +15,15 @@ import MongoStore from "connect-mongo";
 import session from "express-session";
 import { loginRouter } from "./routes/login.router.js";
 import { viewsRouter } from "./routes/view.router.js";
+import { iniPassport } from "./config/passport.config.js";
+import passport from "passport";
 
 const app = express();
 const port = 8080;
 
 connectMongo();
+
+
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -30,6 +34,10 @@ app.use(session({
     resave: true,
     saveUninitialized: true,
 }))
+
+iniPassport();
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.engine(
   "handlebars",
@@ -50,7 +58,7 @@ app.use("/view/products", routerViewProducts);
 app.use("/realtimeproducts", routerRealTimeProducts);
 app.use("/api/carts", routerCarts);
 app.use("/carts", routerViewCart)
-app.use("/api/session", loginRouter)
+app.use("/api/sessions",loginRouter)
 app.use('/', viewsRouter);
 
 app.get("/chat", async (req, res) => {

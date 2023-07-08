@@ -4,6 +4,7 @@ import multer from "multer";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { connect } from "mongoose";
+import bcrypt from "bcrypt";
 
 
 export const __filename = fileURLToPath (import.meta.url);
@@ -32,3 +33,6 @@ export async function connectMongo(){
 
 
 export const uploader = multer ({storage});
+
+export const createHash = (password) => bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+export const isValidPassword = (password, hashPassword) => bcrypt.compareSync(password, hashPassword);

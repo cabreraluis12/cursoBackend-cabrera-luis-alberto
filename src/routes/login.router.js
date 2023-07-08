@@ -1,5 +1,7 @@
 import express from "express";
 import { UserModel } from "../Dao/models/login.models.js";
+import { createHash, isValidPassword } from "../utils.js";
+import passport from 'passport';
 
 export const loginRouter = express.Router();
 
@@ -9,7 +11,7 @@ loginRouter.post('/register', async (req, res) => {
         return res.status(400).render('error-page', { msg: 'faltan datos' });
     }
     try {
-        const user = await UserModel.create({ firstName, lastName, age, email, password, admin: false });
+        const user = await UserModel.create({ firstName, lastName, age, email, password : createHash(password), admin: false });
         req.session.user = {
             firstName: user.firstName,
             email: user.email,
@@ -30,7 +32,7 @@ loginRouter.post('/login', (req, res) => {
   
     UserModel.findOne({ email })
       .then(foundUser => {
-        if (foundUser && foundUser.password === password) {
+        if (foundUser && isValidPassword(password, foundUser.password)) {
           req.session.user = {
             firstName: foundUser.firstName,
             email: foundUser.email,
@@ -38,7 +40,7 @@ loginRouter.post('/login', (req, res) => {
           };
           return res.redirect('/view/products');
         } else {
-          return res.status(400).render('error-page', { msg: 'email o contraseña incorrectos' });
+          return res.status(401).render('error-page', { msg: 'email o contraseña incorrectos' });
         }
       })
       .catch(error => {
@@ -47,3 +49,13 @@ loginRouter.post('/login', (req, res) => {
       });
   });
   
+  loginRouter.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+
+  loginRouter.get('/githubcallback', passport.authenticate('github', { failureRedirect: '/login' }), (req, res) => {
+    req.session.user = req.user;
+    res.redirect('/view/products');
+  });
+
+  loginRouter.get('/show', (req, res) => {
+    return res.send(JSON.stringify(req.session));
+  });
