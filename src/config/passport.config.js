@@ -32,11 +32,12 @@ export function iniPassport() {
             let user = await UserModel.findOne({ email: profile.email });
             if (!user) {
                 const newUser = {
-                email: profile.email,
-                firstName: profile._json.name || profile._json.login || 'noname',
-                lastName: 'nolast',
-                isAdmin: false,
-                password: 'nopass',
+                    email: profile.email,
+                    firstName: profile._json.name || profile._json.login || 'noname',
+                    lastName: 'nolast',
+                    isAdmin: false,
+                    password: 'nopass',
+                    age: 18,
                 };
                 let userCreated = await UserModel.create(newUser);
                 console.log('User Registration succesful');

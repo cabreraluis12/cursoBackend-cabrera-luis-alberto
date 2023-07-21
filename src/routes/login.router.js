@@ -48,6 +48,14 @@ loginRouter.post('/login', (req, res) => {
         return res.status(500).render('error-page', { msg: 'error inesperado en el servidor' });
       });
   });
+
+  loginRouter.get('/current', (req, res) => {
+    if (req.session.user) {
+      return res.status(200).json({ user: req.session.user });
+    } else {
+      return res.status(401).json({ message: 'No se ha iniciado sesión.' });
+    }
+  });
   
   loginRouter.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
 
