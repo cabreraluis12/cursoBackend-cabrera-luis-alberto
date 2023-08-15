@@ -2,16 +2,19 @@ import passport from 'passport';
 import { UserModel } from '../Dao/models/login.models.js';
 import fetch from 'node-fetch';
 import GitHubStrategy from 'passport-github2';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export function iniPassport() {
     passport.use(
         'github',
         new GitHubStrategy(
-        {
-            clientID: 'Iv1.4a2991a475facf04',
-            clientSecret: '',
-            callbackURL: 'http://localhost:8080/api/sessions/githubcallback',
-        },
+            {
+                clientID: process.env.GITHUB_CLIENT_ID,
+                clientSecret: process.env.GITHUB_CLIENT_SECRET,
+                callbackURL: process.env.GITHUB_CALLBACK_URL,
+            },
         async (accesToken, _, profile, done) => {
             try {
             const res = await fetch('https://api.github.com/user/emails', {

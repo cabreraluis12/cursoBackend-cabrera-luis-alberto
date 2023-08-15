@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkAdmin , checkUser } from '../Dao/middlewares/auth.js';
+import { checkAdmin , checkUser } from '../middlewares/auth.js';
 export const viewsRouter = express.Router();
 
 viewsRouter.get('/logout', (req, res) => {

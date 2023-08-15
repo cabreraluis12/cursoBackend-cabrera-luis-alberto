@@ -5,6 +5,9 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { connect } from "mongoose";
 import bcrypt from "bcrypt";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 
 export const __filename = fileURLToPath (import.meta.url);
@@ -18,16 +21,20 @@ const storage = multer.diskStorage({
     },
 });
 
-export async function connectMongo(){
+
+export async function connectMongo() {
     try {
-        await connect(
-            "mongodb+srv://luiscabrera1201:5MWWtCtdtCIek3X4@coder.2kfv2rw.mongodb.net/ecommerce?retryWrites=true&w=majority"
-        );
-        console.log("plug to Mongo")
+        const mongoURI = process.env.MONGO_DB_URI;
+        if (!mongoURI) {
+            throw new Error('MongoDB URI not found in .env file');
+        }
+
+        await connect(mongoURI);
+        console.log('Connected to MongoDB');
     } catch (e) {
-        console.log(e);
-        throw "can't connect to Mongo"
-}
+        console.error(e);
+        throw new Error("Can't connect to MongoDB");
+    }
 }
 
 

@@ -1,36 +1,40 @@
 import express from "express";
 import handlebars from "express-handlebars";
 import { Server } from "socket.io";
-import { routerCarts } from "./routes/cart.router.js";
-import { routerProducts } from "./routes/products.router.js";
-import { routerRealTimeProducts } from "./routes/realTime.products.router.js";
-import { routerViewProducts } from "./routes/view.products.router.js";
+import { routerCarts } from "./Dao/routes/cart.router.js"
+import { routerProducts } from "./Dao/routes/products.router.js";
+import { routerRealTimeProducts } from "./Dao/routes/realTime.products.router.js";
+import { routerViewProducts } from "./Dao/routes/view.products.router.js";
 import { __dirname } from "./utils.js";
-import { initRealTimeProducts } from "./routes/realTime.products.router.js";
+import { initRealTimeProducts } from "./Dao/routes/realTime.products.router.js";
 import { connectMongo } from "./utils.js";
 import { MessageModel } from "./Dao/models/message.model.js";
-import { routerViewCart } from "./routes/view.cart.router.js"
+import { routerViewCart } from "./Dao/routes/view.cart.router.js";
 import cookieParser from "cookie-parser";
 import MongoStore from "connect-mongo";
 import session from "express-session";
-import { loginRouter } from "./routes/login.router.js";
-import { viewsRouter } from "./routes/view.router.js";
+import { loginRouter } from "./Dao/routes/login.router.js";
+import { viewsRouter } from "./Dao/routes/view.router.js";
 import { iniPassport } from "./config/passport.config.js";
 import passport from "passport";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const port = 8080;
+const port = process.env.PORT
 
 connectMongo();
 
-
+const dbUrl = process.env.MONGO_DB_URI;
+const sessionSecret = process.env.SESSION_SECRET;
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({
-    store: MongoStore.create({mongoUrl:"mongodb+srv://luiscabrera1201:5MWWtCtdtCIek3X4@coder.2kfv2rw.mongodb.net/ecommerce?retryWrites=true&w=majority", ttl: 1000}),
-    secret:"es-un-secreto",
+    store: MongoStore.create({ mongoUrl: dbUrl, ttl: 1000 }),
+    secret: sessionSecret,
     resave: true,
     saveUninitialized: true,
 }))

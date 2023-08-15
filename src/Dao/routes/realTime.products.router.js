@@ -1,12 +1,12 @@
 import express from "express";
-import { ProductModel } from "../Dao/models/products.models.js";
+import { productService } from "../services/products.service.js"; 
 
 export const routerRealTimeProducts = express.Router();
 
 export const initRealTimeProducts = (socketServer) => {
   routerRealTimeProducts.get("/", async (req, res) => {
     try {
-      const products = await ProductModel.find().exec();
+      const products = await productService.getAllProducts();
       res.render("realTimeProducts", { products });
     } catch (error) {
       res.status(500).send("Error retrieving products");
@@ -17,7 +17,7 @@ export const initRealTimeProducts = (socketServer) => {
     console.log("A user connected");
 
     // Emitir productos al cliente al conectar
-    ProductModel.find().exec()
+    productService.getAllProducts()
       .then((products) => {
         socket.emit("products", products);
       })
@@ -27,7 +27,7 @@ export const initRealTimeProducts = (socketServer) => {
 
     socket.on("createProduct", async (product) => {
       try {
-        const createdProduct = await ProductModel.create(product);
+        const createdProduct = await productService.addProduct(product);
         socketServer.emit("products", [createdProduct]);
       } catch (error) {
         console.error("Error creating product:", error);
@@ -36,7 +36,7 @@ export const initRealTimeProducts = (socketServer) => {
 
     socket.on("deleteProduct", async (productId) => {
       try {
-        const deletedProduct = await ProductModel.findByIdAndDelete(productId).exec();
+        const deletedProduct = await productService.deleteProduct(productId);
         if (deletedProduct) {
           socketServer.emit("products", [deletedProduct]);
         }
