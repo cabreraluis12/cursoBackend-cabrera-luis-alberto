@@ -4,6 +4,7 @@ export const loginRouter = express.Router();
 
 loginRouter.post('/register', loginController.register);
 loginRouter.post('/login', loginController.login);
+loginRouter.get('/profile', loginController.renderProfileView);
 loginRouter.get('/current', loginController.getCurrentUser);
 loginRouter.get('/github', loginController.authenticateWithGithub);
 loginRouter.get('/githubcallback', loginController.githubCallback);

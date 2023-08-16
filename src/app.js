@@ -18,6 +18,8 @@ import { viewsRouter } from "./Dao/routes/view.router.js";
 import { iniPassport } from "./config/passport.config.js";
 import passport from "passport";
 import dotenv from "dotenv";
+import { checkUser, checkAdmin } from "./Dao/middlewares/auth.js";
+import { loginController } from "./Dao/controller/login.controller.js";
 
 dotenv.config();
 
@@ -65,7 +67,8 @@ app.use("/carts", routerViewCart)
 app.use("/api/sessions",loginRouter)
 app.use('/', viewsRouter);
 
-app.get("/chat", async (req, res) => {
+app.get("/chat", checkUser, async (req, res) => {
+  console.log("User accessing /chat:", req.session.user);
   try {
     const messages = await MessageModel.find().exec();
     res.render("chat", { messages });
@@ -96,14 +99,19 @@ socketServer.on("connection", (socket) => {
       console.error("Error retrieving messages:", error);
     });
 
-  socket.on("newMessage", async (message) => {
-    try {
-      const createdMessage = await MessageModel.create(message);
-      socketServer.emit("messages", [createdMessage]);
-    } catch (error) {
-      console.error("Error creating message:", error);
-    }
-  });
+    socket.on("newMessage", async (message) => {
+      console.log("User sending new message:", socket.handshake.session.user); // Agrega este console.log
+      if (socket.handshake.session.user) { 
+        try {
+          const createdMessage = await MessageModel.create(message);
+          socketServer.emit("messages", [createdMessage]);
+        } catch (error) {
+          console.error("Error creating message:", error);
+        }
+      } else {
+        console.log("User is not authenticated, message not sent.");
+      }
+    });
 
   socket.on("disconnect", () => {
     console.log("A user disconnected");

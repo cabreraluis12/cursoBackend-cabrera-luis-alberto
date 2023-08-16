@@ -6,10 +6,11 @@ export function checkUser(req, res, next) {
 }
 
 export function checkAdmin(req, res, next) {
-    if (req.session.user && req.session.user.admin) {
-
-    next();
+    if (!req.session.user) {
+      return res.redirect('/login');
+    } else if (req.session.user.admin) {
+      return next();
     } else {
-        return res.status(403).render('error-page', { msg: 'Acceso denegado. Por favor, inicia sesión como administrador.' });
+      return res.status(403).render('error-page', { msg: 'Acceso denegado. Solo los administradores pueden acceder a esta página.' });
     }
-}
+  }

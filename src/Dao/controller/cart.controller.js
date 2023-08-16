@@ -1,4 +1,5 @@
 import { CartService } from "../services/cart.service.js";
+import { productService } from "../services/products.service.js";
 
 export class CartController {
   static async createCart(req, res) {
@@ -83,6 +84,49 @@ export class CartController {
       res.status(200).json(result);
     } catch (error) {
       res.status(500).json({ error: "Error interno del servidor" });
+    }
+  }
+
+  static async purchaseCart(req, res) {
+    const { cid } = req.params;
+
+    try {
+      const cart = await CartService.getCartById(cid);
+      const productsInCart = cart.products;
+
+      const productsDetails = await productService.getProductById(productsInCart.map((product) => product.product));
+
+      const productsToPurchase = [];
+      const productsNotPurchased = [];
+
+      for (const productInCart of productsInCart) {
+        const productDetail = productsDetails.find((product) => product.id === productInCart.product);
+
+        if (productDetail.stock >= productInCart.quantity) {
+          productsToPurchase.push({
+            productId: productInCart.product,
+            quantity: productInCart.quantity,
+            totalPrice: productDetail.price * productInCart.quantity,
+          });
+        } else {
+          productsNotPurchased.push(productInCart.productId);
+        }
+      }
+
+      if (productsToPurchase.length > 0) {
+        const updatedProducts = await productService.purchaseProducts(productsToPurchase);
+        const purchaseAmount = productsToPurchase.reduce((total, product) => total + product.totalPrice, 0);
+        const purchaser = cart.userId;
+
+        const ticket = await TicketService.createTicket(purchaseAmount, purchaser);
+        await CartService.removeAllProductsFromCart(cid);
+
+        res.status(200).json({ status: "success", payload: ticket, notPurchased: productsNotPurchased });
+      } else {
+        res.status(400).json({ error: "No products can be purchased", notPurchased: productsNotPurchased });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
   }
 }

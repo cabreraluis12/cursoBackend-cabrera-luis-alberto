@@ -1,10 +1,11 @@
 import express from "express";
 import { productService } from "../services/products.service.js"; 
+import { checkAdmin } from "../middlewares/auth.js";
 
 export const routerRealTimeProducts = express.Router();
 
 export const initRealTimeProducts = (socketServer) => {
-  routerRealTimeProducts.get("/", async (req, res) => {
+  routerRealTimeProducts.get("/", checkAdmin, async (req, res) => {
     try {
       const products = await productService.getAllProducts();
       res.render("realTimeProducts", { products });

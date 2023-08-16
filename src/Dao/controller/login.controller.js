@@ -2,15 +2,16 @@
 import { loginService } from "../services/login.service.js";
 import passport from 'passport';
 import { createHash, isValidPassword } from "../../utils.js";
+import { UserDTO } from "../Dto/UserDTO.js";
 
 class LoginController {
   async register(req, res) {
     const { firstName, lastName, age, email, password } = req.body;
-
+  
     if (!firstName || !lastName || !age || !email || !password) {
       return res.status(400).render('error-page', { msg: 'Faltan datos' });
     }
-
+  
     try {
       const user = await loginService.registerUser({
         firstName,
@@ -20,14 +21,14 @@ class LoginController {
         password: createHash(password),
         admin: false
       });
-
+  
       req.session.user = {
         firstName: user.firstName,
         email: user.email,
-        admin: user.admin
+        admin: user.role
       };
-
-      return res.redirect('/profile');
+  
+      return res.redirect('/profile'); 
     } catch (e) {
       console.log(e);
       return res.status(400).render('error-page', { msg: 'Controla tu email e intenta más tarde' });
@@ -48,7 +49,7 @@ class LoginController {
         req.session.user = {
           firstName: foundUser.firstName,
           email: foundUser.email,
-          admin: foundUser.admin
+          admin: foundUser.role
         };
 
         return res.redirect('/view/products');
@@ -61,9 +62,18 @@ class LoginController {
     }
   }
 
+  async renderProfileView(req, res) {
+    if (req.session.user) {
+      return res.render('profile', { user: req.session.user });
+    } else {
+      return res.status(401).render('error-page', { msg: 'No se ha iniciado sesión.' });
+    }
+  }
+
   async getCurrentUser(req, res) {
     if (req.session.user) {
-      return res.status(200).json({ user: req.session.user });
+      const userDTO = new UserDTO(req.session.user.firstName, req.session.user.email, req.session.user.admin);
+      return res.status(200).json({ user: userDTO });
     } else {
       return res.status(401).json({ message: 'No se ha iniciado sesión.' });
     }
