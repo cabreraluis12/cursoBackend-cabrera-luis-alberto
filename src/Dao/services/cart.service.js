@@ -38,6 +38,7 @@ export class CartService {
         product: productId,
         title: product.title,
         quantity: 1,
+        price: product.price
       };
 
       cart.products.push(newCartItem);
@@ -105,6 +106,45 @@ export class CartService {
     await cart.save();
 
     return cart;
+  }
+
+  static async checkProductAvailability(cart) {
+    const unavailableProducts = [];
+
+    for (const item of cart.products) {
+      const product = await ProductModel.findOne({ id: item.product }).exec();
+      if (!product || product.stock < item.quantity) {
+        unavailableProducts.push(item.product);
+      }
+    }
+
+    return unavailableProducts;
+  }
+
+  static calculateTotalAmount(cart) {
+    let totalAmount = 0;
+
+    for (const item of cart.products) {
+      totalAmount += item.quantity * item.price;
+    }
+
+    return totalAmount;
+  }
+
+  static async purchaseCart(cart, totalAmount) {
+    for (const cartItem of cart.products) {
+      const product = await ProductModel.findOne({ id: cartItem.product }).exec();
+      if (!product) {
+        throw new Error(`El producto con el id ${cartItem.product} no existe`);
+      }
+  
+      if (product.stock < cartItem.quantity) {
+        throw new Error(`No hay suficiente stock para el producto con el id ${cartItem.product}`);
+      }
+  
+      product.stock -= cartItem.quantity;
+      await product.save();
+    }
   }
 
   static generateCartId() {

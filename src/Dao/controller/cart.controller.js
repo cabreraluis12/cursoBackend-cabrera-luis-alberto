@@ -1,5 +1,5 @@
 import { CartService } from "../services/cart.service.js";
-import { productService } from "../services/products.service.js";
+import { TicketService } from "../services/ticket.service.js";
 
 export class CartController {
   static async createCart(req, res) {
@@ -89,44 +89,50 @@ export class CartController {
 
   static async purchaseCart(req, res) {
     const { cid } = req.params;
-
+  
     try {
+      console.log("Starting purchase process for cart:", cid);
+  
       const cart = await CartService.getCartById(cid);
-      const productsInCart = cart.products;
-
-      const productsDetails = await productService.getProductById(productsInCart.map((product) => product.product));
-
-      const productsToPurchase = [];
-      const productsNotPurchased = [];
-
-      for (const productInCart of productsInCart) {
-        const productDetail = productsDetails.find((product) => product.id === productInCart.product);
-
-        if (productDetail.stock >= productInCart.quantity) {
-          productsToPurchase.push({
-            productId: productInCart.product,
-            quantity: productInCart.quantity,
-            totalPrice: productDetail.price * productInCart.quantity,
-          });
-        } else {
-          productsNotPurchased.push(productInCart.productId);
-        }
+  
+      if (!cart) {
+        return res.status(404).json({ error: "No se encontró el carrito" });
       }
-
-      if (productsToPurchase.length > 0) {
-        const updatedProducts = await productService.purchaseProducts(productsToPurchase);
-        const purchaseAmount = productsToPurchase.reduce((total, product) => total + product.totalPrice, 0);
-        const purchaser = cart.userId;
-
-        const ticket = await TicketService.createTicket(purchaseAmount, purchaser);
-        await CartService.removeAllProductsFromCart(cid);
-
-        res.status(200).json({ status: "success", payload: ticket, notPurchased: productsNotPurchased });
-      } else {
-        res.status(400).json({ error: "No products can be purchased", notPurchased: productsNotPurchased });
+  
+      console.log("Cart retrieved:", cart);
+  
+      const unavailableProducts = await CartService.checkProductAvailability(cart);
+  
+      if (unavailableProducts.length > 0) {
+        console.log("Unavailability detected. Unavailable products:", unavailableProducts);
+        return res.status(400).json({ message: "Productos no disponibles", unavailableProducts });
       }
+  
+      const totalAmount = CartService.calculateTotalAmount(cart);
+  
+      if (isNaN(totalAmount) || totalAmount <= 0) {
+        return res.status(400).json({ error: "Monto total inválido" });
+      }
+  
+      console.log("Total amount calculated:", totalAmount);
+  
+      await CartService.purchaseCart(cart, totalAmount);
+      console.log("Cart purchased successfully.");
+  
+      const purchaserEmail = req.session.user.email;
+      if (!purchaserEmail) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
+  
+      const ticket = await TicketService.generateTicket(cart, totalAmount, purchaserEmail);
+  
+      console.log("Ticket generated:", ticket);
+  
+      return res.status(200).json({ message: "Compra exitosa", cart, ticket });
+  
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error en purchaseCart:", error.message);
+      return res.status(500).json({ error: "Error interno del servidor" });
     }
   }
 }
