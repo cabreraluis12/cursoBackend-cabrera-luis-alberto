@@ -25,7 +25,7 @@ class LoginController {
       req.session.user = {
         firstName: user.firstName,
         email: user.email,
-        admin: user.role
+        admin: user.admin
       };
   
       return res.redirect('/profile'); 
