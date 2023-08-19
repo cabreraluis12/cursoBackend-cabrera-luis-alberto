@@ -25,10 +25,10 @@ class LoginController {
       req.session.user = {
         firstName: user.firstName,
         email: user.email,
-        admin: user.admin
+        admin: user.role
       };
   
-      return res.redirect('/profile'); 
+      return res.redirect('/view/products'); 
     } catch (e) {
       console.log(e);
       return res.status(400).render('error-page', { msg: 'Controla tu email e intenta más tarde' });
@@ -49,7 +49,7 @@ class LoginController {
         req.session.user = {
           firstName: foundUser.firstName,
           email: foundUser.email,
-          admin: foundUser.role
+          admin: foundUser.admin
         };
 
         return res.redirect('/view/products');
