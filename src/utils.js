@@ -43,3 +43,17 @@ export const uploader = multer ({storage});
 
 export const createHash = (password) => bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 export const isValidPassword = (password, hashPassword) => bcrypt.compareSync(password, hashPassword);
+
+
+
+export const generateMockProducts = (count) => {
+    const mockProducts = [];
+    for (let i = 1; i <= count; i++) {
+      mockProducts.push({
+        id: i,
+        name: `Product ${i}`,
+        price: Math.random() * 100,
+      });
+    }
+    return mockProducts;
+  };

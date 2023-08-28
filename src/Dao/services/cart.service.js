@@ -21,6 +21,16 @@ export class CartService {
     return cart;
   }
 
+  static async clearCart(cartId) {
+    try {
+      const cart = await cartModel.findById(cartId);
+      cart.products = [];
+      await cart.save();
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async addProductToCart(cartId, productId) {
     const cart = await cartModel.findById(cartId);
     const product = await ProductModel.findOne({ id: productId }).exec();

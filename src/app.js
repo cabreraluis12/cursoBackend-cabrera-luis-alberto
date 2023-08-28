@@ -20,6 +20,9 @@ import passport from "passport";
 import dotenv from "dotenv";
 import { checkUser, checkAdmin } from "./Dao/middlewares/auth.js";
 import { loginController } from "./Dao/controller/login.controller.js";
+import { routerMock} from "./Dao/routes/mocking.router.js"
+import errorHandler from "./Dao/middlewares/error.js";
+
 
 dotenv.config();
 
@@ -66,6 +69,9 @@ app.use("/api/carts", routerCarts);
 app.use("/carts", routerViewCart)
 app.use("/api/sessions",loginRouter)
 app.use('/', viewsRouter);
+app.use("/mockingproducts", routerMock);
+
+app.use(errorHandler);
 
 app.get("/chat", checkUser, async (req, res) => {
   console.log("User accessing /chat:", req.session.user);
