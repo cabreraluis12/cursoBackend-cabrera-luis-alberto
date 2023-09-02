@@ -1,46 +1,57 @@
 import { CartService } from "../services/cart.service.js";
 import { TicketService } from "../services/ticket.service.js";
+import CustomError from "../services/errors/custom-error.js";
+import EErrors from "../services/errors/enums.js";
+import { developmentLogger, productionLogger } from "../../config/logger.js";
+
+
 
 export class CartController {
-  static async createCart(req, res) {
+  static async createCart(req, res, next) {
     try {
       const response = await CartService.createCart();
       res.status(201).json(response);
     } catch (error) {
-      res.status(500).json({ error: "Error interno del servidor" });
+      next(new CustomError({
+        name: EErrors.INTERNAL_SERVER_ERROR,
+        cause: "Error interno del servidor",
+      }));
     }
   }
 
-  static async getCartById(req, res) {
+  static async getCartById(req, res, next) {
     const { cid } = req.params;
     try {
       const cart = await CartService.getCartById(cid);
 
-      if (cart) {
-        res.status(200).json({
-          status: "success",
-          msg: `Se encontró el carrito con el id ${cid}`,
-          data: { cart },
-        });
-      } else {
-        res.status(404).json({
-          status: "Error",
-          msg: `El carrito con el id ${cid} no existe`,
+      if (!cart) {
+        throw CustomError.createError({
+          name: EErrors.CART_NOT_FOUND,
+          cause: `El carrito con el id ${cid} no existe`,
+          code: 404
         });
       }
+
+      res.status(200).json({
+        status: "success",
+        msg: `Se encontró el carrito con el id ${cid}`,
+        data: { cart },
+      });
     } catch (error) {
-      console.error("Error en getCartById:", error.message);
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  static async addProductToCart(req, res) {
+  static async addProductToCart(req, res, next) {
     const { cid, pid } = req.params;
     try {
       const result = await CartService.addProductToCart(cid, pid);
       res.status(200).json(result);
     } catch (error) {
-      res.status(500).json({ error: "Error interno del servidor" });
+      next(new CustomError({
+        name: EErrors.INTERNAL_SERVER_ERROR,
+        cause: "Error interno del servidor",
+      }));
     }
   }
 
@@ -48,10 +59,12 @@ export class CartController {
     const { cid, pid } = req.params;
     try {
       const result = await CartService.removeProductFromCart(cid, pid);
-      res.status(200).json(result);
-    } catch (error) {
-      console.error("Error en removeProductFromCart:", error.message);
+      developmentLogger.error(`Error en removeProductFromCart: ${error.message}`);
+      productionLogger.error(`Error en removeProductFromCart: ${error.message}`);
+
       res.status(500).json({ error: "Error interno del servidor" });
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -87,52 +100,54 @@ export class CartController {
     }
   }
 
-  static async purchaseCart(req, res) {
+  static async purchaseCart(req, res, next) {
     const { cid } = req.params;
-  
+
     try {
-      console.log("Starting purchase process for cart:", cid);
-  
       const cart = await CartService.getCartById(cid);
-  
+
       if (!cart) {
-        return res.status(404).json({ error: "No se encontró el carrito" });
+        throw new CustomError({
+          name: EErrors.CART_NOT_FOUND,
+          cause: `El carrito con el id ${cid} no existe`,
+        });
       }
-  
-      console.log("Cart retrieved:", cart);
-  
+
       const unavailableProducts = await CartService.checkProductAvailability(cart);
-  
+
       if (unavailableProducts.length > 0) {
-        console.log("Unavailability detected. Unavailable products:", unavailableProducts);
-        return res.status(400).json({ message: "Productos no disponibles", unavailableProducts });
+        throw new CustomError({
+          name: EErrors.PRODUCT_UNAVAILABLE,
+          cause: "Productos no disponibles",
+          unavailableProducts,
+        });
       }
-  
+
       const totalAmount = CartService.calculateTotalAmount(cart);
-  
+
       if (isNaN(totalAmount) || totalAmount <= 0) {
-        return res.status(400).json({ error: "Monto total inválido" });
+        throw new CustomError({
+          name: EErrors.INVALID_TOTAL_AMOUNT,
+          cause: "Monto total inválido",
+        });
       }
-  
-      console.log("Total amount calculated:", totalAmount);
-  
+
       await CartService.purchaseCart(cart, totalAmount);
-      console.log("Cart purchased successfully.");
-  
+
       const purchaserEmail = req.session.user.email;
       if (!purchaserEmail) {
-        return res.status(401).json({ error: "Usuario no autenticado" });
+        throw new CustomError({
+          name: EErrors.UNAUTHENTICATED_USER,
+          cause: "Usuario no autenticado",
+        });
       }
-  
+
       const ticket = await TicketService.generateTicket(cart, totalAmount, purchaserEmail);
-  
-      console.log("Ticket generated:", ticket);
-  
+
       return res.status(200).json({ message: "Compra exitosa", cart, ticket });
-  
+
     } catch (error) {
-      console.error("Error en purchaseCart:", error.message);
-      return res.status(500).json({ error: "Error interno del servidor" });
+      next(error);
     }
   }
 }

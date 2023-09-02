@@ -22,6 +22,9 @@ import { checkUser, checkAdmin } from "./Dao/middlewares/auth.js";
 import { loginController } from "./Dao/controller/login.controller.js";
 import { routerMock} from "./Dao/routes/mocking.router.js"
 import errorHandler from "./Dao/middlewares/error.js";
+import "express-async-errors";
+import { developmentLogger, productionLogger } from "./config/logger.js";
+
 
 
 dotenv.config();
@@ -70,6 +73,24 @@ app.use("/carts", routerViewCart)
 app.use("/api/sessions",loginRouter)
 app.use('/', viewsRouter);
 app.use("/mockingproducts", routerMock);
+app.get('/loggerTest', (req, res) => {
+  try {
+    throw new Error('Este es un error de prueba');
+  } catch (error) {
+    developmentLogger.error(error.message);
+    productionLogger.error(error.message);
+  }
+  developmentLogger.debug('Este es un mensaje de depuración');
+  developmentLogger.info('Este es un mensaje de información en desarrollo');
+  developmentLogger.warn('Este es un mensaje de advertencia en desarrollo');
+  developmentLogger.http('Este es un mensaje HTTP en desarrollo');
+
+  productionLogger.info('Este es un mensaje de información en producción');
+  productionLogger.warn('Este es un mensaje de advertencia en producción');
+  productionLogger.http('Este es un mensaje HTTP en producción');
+
+  res.send('Registro de logs exitoso');
+});
 
 app.use(errorHandler);
 

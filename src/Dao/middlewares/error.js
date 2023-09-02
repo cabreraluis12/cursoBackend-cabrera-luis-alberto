@@ -41,17 +41,20 @@ export default (error, req, res, next) => {
       });
       break;
     case EErrors.UNAUTHENTICATED_USER:
-      res.status(401).json({
+      res
+      .status(401)
+      .send({
         status: "error",
         error: error.name,
         cause: error.cause || "Usuario no autenticado",
       });
       break;
-    case EErrors.CART_NOT_FOUND:
-      res.status(404).json({
+      case EErrors.CART_NOT_FOUND:
+      console.log("Capturado error: CART_NOT_FOUND");
+      res.status(404).send({
         status: "error",
         error: error.name,
-        cause: error.cause || "El carrito no existe",
+        cause: error.cause || "El carrito no fue encontrado",
       });
       break;
     case EErrors.MISSING_FIELDS:
@@ -66,6 +69,13 @@ export default (error, req, res, next) => {
         status: "error",
         error: error.name,
         cause: error.cause || "El código de producto ya existe",
+      });
+      break;
+    case EErrors.INTERNAL_SERVER_ERROR:
+      res.status(500).json({
+        status: "error",
+        error: error.name,
+        cause: error.cause || "Error interno del servidor",
       });
       break;
     default:

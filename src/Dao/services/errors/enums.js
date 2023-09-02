@@ -1,5 +1,4 @@
 const EErrors = {
-    // Errores comunes
     INVALID_TYPES_ERROR: 1,
     INVALID_CREDENTIALS: 2,
     USER_NOT_FOUND: 3,

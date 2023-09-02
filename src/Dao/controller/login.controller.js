@@ -3,15 +3,21 @@ import { loginService } from "../services/login.service.js";
 import passport from 'passport';
 import { createHash, isValidPassword } from "../../utils.js";
 import { UserDTO } from "../Dto/UserDTO.js";
+import EErrors from "../services/errors/enums.js";
+import CustomError from "../services/errors/custom-error.js";
+import { developmentLogger, productionLogger } from "../../config/logger.js";
 
 class LoginController {
   async register(req, res) {
     const { firstName, lastName, age, email, password } = req.body;
-  
+
     if (!firstName || !lastName || !age || !email || !password) {
-      return res.status(400).render('error-page', { msg: 'Faltan datos' });
+      const errorMessage = 'Faltan datos';
+      developmentLogger.error(errorMessage);
+      productionLogger.error(errorMessage);
+      return res.status(400).render('error-page', { msg: errorMessage });
     }
-  
+
     try {
       const user = await loginService.registerUser({
         firstName,
@@ -19,19 +25,28 @@ class LoginController {
         age,
         email,
         password: createHash(password),
-        admin: false
+        admin: false,
       });
-  
+
       req.session.user = {
         firstName: user.firstName,
         email: user.email,
-        admin: user.role
+        admin: user.role,
       };
-  
-      return res.redirect('/view/products'); 
-    } catch (e) {
-      console.log(e);
-      return res.status(400).render('error-page', { msg: 'Controla tu email e intenta más tarde' });
+
+      return res.redirect('/view/products');
+    } catch (error) {
+      developmentLogger.error(error.message);
+      productionLogger.error(error.message);
+
+      const customError = CustomError.createError({
+        name: 'User creation error',
+        cause: 'Controla tu email e intenta más tarde',
+        message: 'Error trying to create user',
+        code: EErrors.INTERNAL_SERVER_ERROR,
+      });
+
+      return res.status(customError.code).render('error-page', { msg: customError.cause });
     }
   }
 
@@ -39,7 +54,10 @@ class LoginController {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).render('error-page', { msg: 'Faltan datos' });
+      const errorMessage = 'Faltan datos';
+      developmentLogger.error(errorMessage);
+      productionLogger.error(errorMessage);
+      return res.status(400).render('error-page', { msg: errorMessage });
     }
 
     try {
@@ -49,16 +67,32 @@ class LoginController {
         req.session.user = {
           firstName: foundUser.firstName,
           email: foundUser.email,
-          admin: foundUser.admin
+          admin: foundUser.admin,
         };
 
         return res.redirect('/view/products');
       } else {
-        return res.status(401).render('error-page', { msg: 'Email o contraseña incorrectos' });
+        throw CustomError.createError({
+          name: 'Invalid credentials error',
+          cause: 'Email o contraseña incorrectos',
+          code: EErrors.INVALID_CREDENTIALS,
+        });
       }
     } catch (error) {
-      console.log(error);
-      return res.status(500).render('error-page', { msg: 'Error inesperado en el servidor' });
+      developmentLogger.error(error.message);
+      productionLogger.error(error.message);
+
+      if (error.name === 'Invalid credentials error') {
+        return res.status(error.code).render('error-page', { msg: error.cause });
+      } else {
+        const customError = CustomError.createError({
+          name: 'Internal server error',
+          cause: 'Error inesperado en el servidor',
+          code: EErrors.INTERNAL_SERVER_ERROR,
+        });
+
+        return res.status(customError.code).render('error-page', { msg: customError.cause });
+      }
     }
   }
 
@@ -95,8 +129,24 @@ class LoginController {
   }
 
   async showSession(req, res) {
-    return res.send(JSON.stringify(req.session));
+    try {
+      developmentLogger.debug('Mostrando sesión');
+      productionLogger.debug('Mostrando sesión');
+      return res.send(JSON.stringify(req.session));
+    } catch (error) {
+      developmentLogger.error(error.message);
+      productionLogger.error(error.message);
+
+      const customError = CustomError.createError({
+        name: 'Internal server error',
+        cause: 'Error inesperado en el servidor',
+        code: EErrors.INTERNAL_SERVER_ERROR,
+      });
+
+      return res.status(customError.code).render('error-page', { msg: customError.cause });
+    }
   }
 }
+
 
 export const loginController = new LoginController();
